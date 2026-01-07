@@ -47,7 +47,7 @@ func (opt *LarkMiddleware) WithTokenVerification(token string) *LarkMiddleware {
 // WithEncryption .
 func (opt *LarkMiddleware) WithEncryption(key string) *LarkMiddleware {
 	opt.enableEncryption = true
-	opt.encryptKey = lark.EncryptKey(key)
+	opt.encryptKey = []byte(key)
 
 	return opt
 }
