@@ -87,8 +87,8 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 		if err != nil {
 			return
 		}
-		fmt.Println(body)
 		var inputBody = body
+		opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("Unmarshal JSON error: %s", string(inputBody)))
 
 		if opt.enableEncryption {
 			// decrypt encrypted event
@@ -119,6 +119,7 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 				timestamp := c.Request.Header.Get("X-Lark-Request-Timestamp")
 				signature := c.Request.Header.Get("X-Lark-Signature")
 				sig := opt.cardSignature(nonce, timestamp, decrypte_string, string(opt.verificationToken))
+				opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("nonce: %s,timestamp: %s,signature: %s,sig: %s", nonce, timestamp, signature, sig))
 				fmt.Println(nonce)
 				fmt.Println(timestamp)
 				fmt.Println(signature)
