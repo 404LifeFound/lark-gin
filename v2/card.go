@@ -87,6 +87,7 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 		if err != nil {
 			return
 		}
+		fmt.Println(body)
 		var inputBody = body
 
 		if opt.enableEncryption {
@@ -117,7 +118,7 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 				nonce := c.Request.Header.Get("X-Lark-Request-Nonce")
 				timestamp := c.Request.Header.Get("X-Lark-Request-Timestamp")
 				signature := c.Request.Header.Get("X-Lark-Signature")
-				sig := opt.cardSignature(nonce, timestamp, string(body), string(opt.verificationToken))
+				sig := opt.cardSignature(nonce, timestamp, decrypte_string, string(opt.verificationToken))
 				if signature != sig {
 					opt.logger.Log(c, lark.LogLevelError, "encryptkey verification failed")
 					return
