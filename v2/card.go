@@ -54,23 +54,12 @@ type Operator struct {
 }
 
 type Action struct {
-	Value ActionValue `json:"value"`
-	Tag   string      `json:"tag"`
+	Value json.RawMessage `json:"value"`
+	Tag   string          `json:"tag"`
 }
 
 type EncryptEvent struct {
 	Encrypt string `json:"encrypt"`
-}
-
-type ActionValue struct {
-	Action      string `json:"action"`
-	Description string `json:"description"`
-	GrafanaURL  string `json:"grafana_url"`
-	Metric      string `json:"metric"`
-	Project     string `json:"project"`
-	RunbookURL  string `json:"runbook_url"`
-	Time        string `json:"time"`
-	Title       string `json:"title"`
 }
 
 type Context struct {
