@@ -3,7 +3,6 @@ package larkgin
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -88,9 +87,20 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 			return
 		}
 		var inputBody = body
-		opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("inputbody: %s", string(inputBody)))
+		opt.logger.Log(c, lark.LogLevelDebug, fmt.Sprintf("inputbody: %s", string(inputBody)))
 
 		if opt.enableEncryption {
+			// verify signature
+			nonce := c.Request.Header.Get("X-Lark-Request-Nonce")
+			timestamp := c.Request.Header.Get("X-Lark-Request-Timestamp")
+			signature := c.Request.Header.Get("X-Lark-Signature")
+			sig := opt.cardSignature(nonce, timestamp, string(inputBody), string(opt.encryptKey))
+			opt.logger.Log(c, lark.LogLevelDebug, fmt.Sprintf("nonce: %s,timestamp: %s,signature: %s,sig: %s", nonce, timestamp, signature, sig))
+			if signature != sig {
+				opt.logger.Log(c, lark.LogLevelError, "encryptkey verification failed")
+				return
+			}
+
 			// decrypt encrypted event
 			var encrypt_event EncryptEvent
 			err = json.Unmarshal(inputBody, &encrypt_event)
@@ -98,7 +108,7 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal Encrypted JSON error: %v", err))
 				return
 			} else {
-				opt.logger.Log(c, lark.LogLevelInfo, "Unmarshal Encrypted JSON success")
+				opt.logger.Log(c, lark.LogLevelDebug, "Unmarshal Encrypted JSON success")
 			}
 
 			decrypte_string, err := opt.decryptEncryptString(string(opt.encryptKey), encrypt_event.Encrypt)
@@ -106,7 +116,7 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("decrypt encrypt string error: %v", err))
 				return
 			} else {
-				opt.logger.Log(c, lark.LogLevelInfo, "decrypt encrypt string success")
+				opt.logger.Log(c, lark.LogLevelDebug, "decrypt encrypt string success")
 			}
 
 			var decrypt_event CardActionTriggerEvent
@@ -117,28 +127,6 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 				return
 			}
 
-			// verify verificationToken
-			if opt.enableTokenVerification {
-				// encryptkey verification
-				nonce := c.Request.Header.Get("X-Lark-Request-Nonce")
-				timestamp := c.Request.Header.Get("X-Lark-Request-Timestamp")
-				signature := c.Request.Header.Get("X-Lark-Signature")
-				sig := opt.cardSignature(nonce, timestamp, decrypte_string, string(opt.verificationToken))
-				opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("nonce: %s,timestamp: %s,signature: %s,sig: %s", nonce, timestamp, signature, sig))
-				fmt.Println(nonce)
-				fmt.Println(timestamp)
-				fmt.Println(signature)
-				fmt.Println(sig)
-				if signature != sig {
-					opt.logger.Log(c, lark.LogLevelError, "encryptkey verification failed")
-					return
-				}
-
-				if decrypt_event.Header.Token != opt.verificationToken {
-					opt.logger.Log(c, lark.LogLevelWarn, "verification mismatched")
-					return
-				}
-			}
 			c.Set(opt.cardKey, decrypt_event)
 		} else {
 			var event CardActionTriggerEvent
@@ -146,13 +134,6 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 			if err != nil {
 				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal JSON error: %v", err))
 				return
-			}
-			// verify verificationToken
-			if opt.enableTokenVerification {
-				if event.Header.Token != opt.verificationToken {
-					opt.logger.Log(c, lark.LogLevelWarn, "verification mismatched")
-					return
-				}
 			}
 			c.Set(opt.cardKey, event)
 		}
@@ -164,12 +145,13 @@ func (opt LarkMiddleware) cardSignature(nonce, timestamp, bodystring, encryptKey
 	b.WriteString(timestamp)
 	b.WriteString(nonce)
 	b.WriteString(encryptKey)
-	b.WriteString(bodystring)
+	b.WriteString(bodystring) //bodystring refers to the entire request body, do not calculate it after deserialization
 	bs := []byte(b.String())
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(bs)
 	bs = h.Sum(nil)
-	return fmt.Sprintf("%x", bs)
+	sig := fmt.Sprintf("%x", bs)
+	return sig
 }
 
 func (opt LarkMiddleware) decryptEncryptString(encryptKey string, cryptoText string) (string, error) {
