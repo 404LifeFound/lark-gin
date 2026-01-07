@@ -15,9 +15,9 @@ import (
 )
 
 // GetCardCallback from gin context
-func (opt LarkMiddleware) GetCardCallback(c *gin.Context) (*lark.EventCardCallback, bool) {
+func (opt LarkMiddleware) GetCardCallback(c *gin.Context) (*CardActionTriggerEvent, bool) {
 	if card, ok := c.Get(opt.cardKey); ok {
-		msg, ok := card.(lark.EventCardCallback)
+		msg, ok := card.(CardActionTriggerEvent)
 		return &msg, ok
 	}
 
