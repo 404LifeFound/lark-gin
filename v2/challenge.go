@@ -24,12 +24,23 @@ func (opt LarkMiddleware) LarkChallengeHandler() gin.HandlerFunc {
 		}
 		var inputBody = body
 		if opt.enableEncryption {
-			decryptedData, err := opt.decodeEncryptedJSON(body)
+			// decrypt encrypted event
+			var encrypt_event EncryptEvent
+			err = json.Unmarshal(inputBody, &encrypt_event)
 			if err != nil {
-				opt.logger.Log(c, lark.LogLevelError, fmt.Sprintf("Decrypt failed: %v", err))
+				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal Encrypted JSON error: %v", err))
 				return
+			} else {
+				opt.logger.Log(c, lark.LogLevelDebug, "Unmarshal Encrypted JSON success")
 			}
-			inputBody = decryptedData
+			decryptedData, err := opt.decryptEncryptString(string(opt.encryptKey), encrypt_event.Encrypt)
+			if err != nil {
+				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("decrypt encrypt string error: %v", err))
+				return
+			} else {
+				opt.logger.Log(c, lark.LogLevelDebug, "decrypt encrypt string success")
+			}
+			inputBody = []byte(decryptedData)
 		}
 
 		var challenge lark.EventChallenge
