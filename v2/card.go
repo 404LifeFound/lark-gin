@@ -88,27 +88,32 @@ func (opt LarkMiddleware) LarkCardHandler() gin.HandlerFunc {
 			return
 		}
 		var inputBody = body
-		opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("Unmarshal JSON error: %s", string(inputBody)))
+		opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("inputbody: %s", string(inputBody)))
 
 		if opt.enableEncryption {
 			// decrypt encrypted event
 			var encrypt_event EncryptEvent
 			err = json.Unmarshal(inputBody, &encrypt_event)
 			if err != nil {
-				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal JSON error: %v", err))
+				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal Encrypted JSON error: %v", err))
 				return
+			} else {
+				opt.logger.Log(c, lark.LogLevelInfo, "Unmarshal Encrypted JSON success")
 			}
 
 			decrypte_string, err := opt.decryptEncryptString(string(opt.encryptKey), encrypt_event.Encrypt)
 			if err != nil {
 				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("decrypt encrypt string error: %v", err))
 				return
+			} else {
+				opt.logger.Log(c, lark.LogLevelInfo, "decrypt encrypt string success")
 			}
 
 			var decrypt_event CardActionTriggerEvent
+			opt.logger.Log(c, lark.LogLevelInfo, fmt.Sprintf("decrypt string is: %s", decrypte_string))
 			err = json.Unmarshal([]byte(decrypte_string), &decrypt_event)
 			if err != nil {
-				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal JSON error: %v", err))
+				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal CardActionTriggerEvent JSON error: %v", err))
 				return
 			}
 
