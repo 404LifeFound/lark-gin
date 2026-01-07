@@ -1,4 +1,4 @@
-module github.com/go-lark/lark-gin
+module github.com/404LifeFound/lark-gin
 
 go 1.13
 
