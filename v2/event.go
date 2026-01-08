@@ -8,10 +8,80 @@ import (
 	"github.com/go-lark/lark/v2"
 )
 
-// GetEvent should call GetEvent if you're using EventV2
-func (opt LarkMiddleware) GetEvent(c *gin.Context) (*lark.Event, bool) {
+type NormalEventCallback struct {
+	Schema string       `json:"schema"`
+	Header NormalHeader `json:"header"`
+	Event  NormalEvent  `json:"event"`
+}
+
+/***************
+ * Header
+ ***************/
+type NormalHeader struct {
+	EventID    string `json:"event_id"`
+	Token      string `json:"token"`
+	CreateTime string `json:"create_time"`
+	EventType  string `json:"event_type"`
+	TenantKey  string `json:"tenant_key"`
+	AppID      string `json:"app_id"`
+}
+
+/***************
+ * Event
+ ***************/
+type NormalEvent struct {
+	Message Message `json:"message"`
+	Sender  Sender  `json:"sender"`
+}
+
+/***************
+ * Message
+ ***************/
+type Message struct {
+	ChatID      string    `json:"chat_id"`
+	ChatType    string    `json:"chat_type"`
+	Content     string    `json:"content"`
+	CreateTime  string    `json:"create_time"`
+	UpdateTime  string    `json:"update_time"`
+	MessageID   string    `json:"message_id"`
+	MessageType string    `json:"message_type"`
+	Mentions    []Mention `json:"mentions"`
+}
+
+/***************
+ * Mention
+ ***************/
+type Mention struct {
+	ID        MentionID `json:"id"`
+	Key       string    `json:"key"`
+	Name      string    `json:"name"`
+	TenantKey string    `json:"tenant_key"`
+}
+
+type MentionID struct {
+	OpenID  string `json:"open_id"`
+	UnionID string `json:"union_id"`
+	UserID  string `json:"user_id"`
+}
+
+/***************
+ * Sender
+ ***************/
+type Sender struct {
+	SenderID   SenderID `json:"sender_id"`
+	SenderType string   `json:"sender_type"`
+	TenantKey  string   `json:"tenant_key"`
+}
+
+type SenderID struct {
+	OpenID  string `json:"open_id"`
+	UnionID string `json:"union_id"`
+	UserID  string `json:"user_id"`
+}
+
+func (opt LarkMiddleware) GetEvent(c *gin.Context) (*NormalEventCallback, bool) {
 	if message, ok := c.Get(opt.messageKey); ok {
-		event, ok := message.(lark.Event)
+		event, ok := message.(NormalEventCallback)
 		if event.Schema != "2.0" {
 			return nil, false
 		}
@@ -63,7 +133,7 @@ func (opt LarkMiddleware) LarkEventHandler() gin.HandlerFunc {
 			inputBody = []byte(decrypte_string)
 		}
 
-		var event lark.Event
+		var event NormalEventCallback
 		err = json.Unmarshal(inputBody, &event)
 		if err != nil {
 			opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("Unmarshal JSON error: %v", err))
