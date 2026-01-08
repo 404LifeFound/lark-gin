@@ -58,7 +58,7 @@ func (opt LarkMiddleware) LarkEventHandler() gin.HandlerFunc {
 				opt.logger.Log(c, lark.LogLevelWarn, fmt.Sprintf("decrypt encrypt string error: %v", err))
 				return
 			} else {
-				opt.logger.Log(c, lark.LogLevelDebug, "decrypt encrypt string success")
+				opt.logger.Log(c, lark.LogLevelDebug, fmt.Sprintf("decrypt encrypt string success: %s", decrypte_string))
 			}
 			inputBody = []byte(decrypte_string)
 		}
